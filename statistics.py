@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description='Analyze (and visualize) logs')
 parser.add_argument('directory', metavar='logs_directory', type=str, help='The folder containing the PlyMouth CSV logs')
 parser.add_argument('-v', '--verbose', action='store_true', help='Print verbose output')
 parser.add_argument('-i', '--interactive', action='store_true', help='Show figures in window before saving')
+parser.add_argument('-c', '--compact', action='store_true', help='Focus on significant part of figures (might exclude outliers)')
 parser.add_argument('unnamed_fields', metavar='unnamed_field', type=str, nargs='+', help='Names of unnamed fields (iteration-level)')
 
 args = parser.parse_args()
@@ -110,11 +111,15 @@ ply_indices = numpy.concatenate([ply_data[ply_index][:, 0] for ply_index in rang
 for field_name_index, field_name in enumerate(field_names):
     if field_name_index == 0: # ply index itself
         continue
+
+    points = numpy.concatenate([ply_data[ply_index][:, field_name_index] for ply_index in range(maximum_game_length)])
+
     plot.title(field_name)
     plot.xlim([0, maximum_game_length + 1])  # one before and after
+    plot.ylim([0, numpy.mean(points) + 3 * numpy.std(points)])
     plot.scatter(
         ply_indices,
-        numpy.concatenate([ply_data[ply_index][:, field_name_index] for ply_index in range(maximum_game_length)]),
+        points,
         alpha=.2,
         c='r',
         edgecolors=''
