@@ -4,8 +4,10 @@ import glob
 import os
 import numpy
 import matplotlib.pyplot as plot
+import shutil
 
 field_names = []
+OUTPUT_FOLDER = 'plots'
 
 parser = argparse.ArgumentParser(description='Analyze (and visualize) logs')
 parser.add_argument('directory', metavar='logs_directory', type=str, help='The folder containing the PlyMouth CSV logs')
@@ -19,6 +21,10 @@ args = parser.parse_args()
 if not os.path.isdir(args.directory):
     print("Not a directory (or does not exist: %s" % args.directory)
     exit(1)
+
+if os.path.isdir(OUTPUT_FOLDER):
+    shutil.rmtree(OUTPUT_FOLDER)
+os.mkdir(OUTPUT_FOLDER)
 
 raw_data = []
 game_lengths = []
@@ -127,10 +133,11 @@ for field_name_index, field_name in enumerate(field_names):
     plot.plot(range(1, maximum_game_length + 1), [numpy.mean(ply_data[ply_index][:, field_name_index], axis=0) for ply_index in range(maximum_game_length)])
     if args.interactive:
         plot.show()
-    plot.savefig("plots/%s.png" % field_name.replace(' ', '_').lower())
+    plot.savefig("%s/%s.png" % (OUTPUT_FOLDER, field_name.replace(' ', '_').lower()))
     plot.close()
 print("OK.")
 
+print("Goodbye.")
 
 
 
