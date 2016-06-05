@@ -10,6 +10,7 @@ field_names = []
 parser = argparse.ArgumentParser(description='Analyze (and visualize) logs')
 parser.add_argument('directory', metavar='logs_directory', type=str, help='The folder containing the PlyMouth CSV logs')
 parser.add_argument('-v', '--verbose', action='store_true', help='Print verbose output')
+parser.add_argument('-i', '--interactive', action='store_true', help='Show figures in window before saving')
 parser.add_argument('unnamed_fields', metavar='unnamed_field', type=str, nargs='+', help='Names of unnamed fields (iteration-level)')
 
 args = parser.parse_args()
@@ -82,24 +83,26 @@ for row_index, row in enumerate(raw_data):
             running_iteration_indices[iteration_index] += 1
 print("OK.")
 
-print("Create histograms for iterations... ", end='')
-for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
-    plot.title(unnamed_field)
-    bins = numpy.linspace(
-        min([numpy.min(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
-        max([numpy.max(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
-        100
-    )
-    for iteration_index in range(maximum_iterations):
-        # print(numpy.mean(iteration_data[iteration_index], axis=0))
-        mean = numpy.mean(iteration_data[iteration_index], axis=0)[unnamed_field_index]
-
-        plot.hist(iteration_data[iteration_index][:, unnamed_field_index], bins, label=("Iteration %d" % iteration_index))
-        plot.axvline(mean)
-
-    plot.savefig("plots/%s.png" % unnamed_field.replace(' ', '_').lower())
-    plot.close()
-print("OK.")
+# print("Create histograms for iterations... ", end='')
+# for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
+#     plot.title(unnamed_field)
+#     bins = numpy.linspace(
+#         min([numpy.min(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
+#         max([numpy.max(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
+#         100
+#     )
+#     for iteration_index in range(maximum_iterations):
+#         # print(numpy.mean(iteration_data[iteration_index], axis=0))
+#         mean = numpy.mean(iteration_data[iteration_index], axis=0)[unnamed_field_index]
+#
+#         plot.hist(iteration_data[iteration_index][:, unnamed_field_index], bins, label=("Iteration %d" % iteration_index))
+#         plot.axvline(mean)
+#
+#     plot.savefig("plots/%s.png" % unnamed_field.replace(' ', '_').lower())
+#     if args.interactive:
+#         plot.show()
+#     plot.close()
+# print("OK.")
 
 print("Create plots for plies... ", end='')
 ply_data = [ply_data[numpy.where(ply_data[:, 0] == ply_index + 1)] for ply_index in range(maximum_game_length)]
@@ -117,6 +120,8 @@ for field_name_index, field_name in enumerate(field_names):
         edgecolors=''
     )
     plot.plot(range(1, maximum_game_length + 1), [numpy.mean(ply_data[ply_index][:, field_name_index], axis=0) for ply_index in range(maximum_game_length)])
+    if args.interactive:
+        plot.show()
     plot.savefig("plots/%s.png" % field_name.replace(' ', '_').lower())
     plot.close()
 print("OK.")
