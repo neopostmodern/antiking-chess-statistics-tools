@@ -130,7 +130,12 @@ for field_name_index, field_name in enumerate(field_names):
         c='r',
         edgecolors=''
     )
-    plot.plot(range(1, maximum_game_length + 1), [numpy.mean(ply_data[ply_index][:, field_name_index], axis=0) for ply_index in range(maximum_game_length)])
+    mean = numpy.array([numpy.mean(ply_data[ply_index][:, field_name_index], axis=0) for ply_index in range(maximum_game_length)])
+    std = numpy.array([numpy.std(ply_data[ply_index][:, field_name_index], axis=0) for ply_index in range(maximum_game_length)])
+
+    plot.plot(range(1, maximum_game_length + 1), mean, color='b')
+    plot.plot(range(1, maximum_game_length + 1), mean + std, color='g', alpha=.5)
+    plot.plot(range(1, maximum_game_length + 1), mean - std, color='g', alpha=.5)
     if args.interactive:
         plot.show()
     plot.savefig("%s/%s.png" % (OUTPUT_FOLDER, field_name.replace(' ', '_').lower()))
