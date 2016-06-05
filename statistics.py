@@ -9,7 +9,7 @@ field_names = []
 
 parser = argparse.ArgumentParser(description='Analyze (and visualize) logs')
 parser.add_argument('directory', metavar='logs_directory', type=str, help='The folder containing the PlyMouth CSV logs')
-# parser.add_argument('--max_iterations', metavar='max_iterations', type=int, default=10, help='The maximum number of iterations in the logs')
+parser.add_argument('-v', '--verbose', action='store_true', help='Print verbose output')
 parser.add_argument('unnamed_fields', metavar='unnamed_field', type=str, nargs='+', help='Names of unnamed fields (iteration-level)')
 
 args = parser.parse_args()
@@ -22,6 +22,7 @@ raw_data = []
 game_lengths = []
 row_lengths = []
 
+print("Load data... ", end='')
 for log_file_name in glob.glob(os.path.join(args.directory, '*.csv')):
     with open(log_file_name, newline='') as game_log_file:
         csv_reader = csv.reader(game_log_file, delimiter=';')
@@ -42,6 +43,7 @@ for log_file_name in glob.glob(os.path.join(args.directory, '*.csv')):
             game_length += 1
 
         game_lengths.append(game_length)
+print("OK.")
 
 max_row_length = max(row_lengths)
 maximum_game_length = max(game_lengths)
@@ -49,19 +51,19 @@ iteration_counts = numpy.bincount(row_lengths)[len(field_names)::len(args.unname
 maximum_iterations = (max_row_length - len(field_names)) // len(args.unnamed_fields)
 iteration_sizes = [sum(iteration_counts[iteration_index:]) for iteration_index in range(maximum_iterations)]
 
-print("Read %d games (%d plies)." % (len(game_lengths), len(raw_data)))
-print("> Game lengths:", game_lengths)
-print("> Maximum game length:", maximum_game_length)
-print("> Maximum row length: %d" % max_row_length)
-print("> Number of named fields: %d" % len(field_names), field_names)
-print("> Number of unnamed fields (per iteration): %d" % len(args.unnamed_fields), args.unnamed_fields)
-print("> Maximum iterations: %d" % maximum_iterations)
-print("> Iteration counts:", list(iteration_counts), iteration_sizes)
+if args.verbose:
+    print("Read %d games (%d plies)." % (len(game_lengths), len(raw_data)))
+    print("> Game lengths:", game_lengths)
+    print("> Maximum game length:", maximum_game_length)
+    print("> Maximum row length: %d" % max_row_length)
+    print("> Number of named fields: %d" % len(field_names), field_names)
+    print("> Number of unnamed fields (per iteration): %d" % len(args.unnamed_fields), args.unnamed_fields)
+    print("> Maximum iterations: %d" % maximum_iterations)
+    print("> Iteration counts:", list(iteration_counts), iteration_sizes)
 
 ply_data = numpy.ndarray((len(raw_data), len(field_names) + 1), dtype=numpy.int)
-# print([(len(args.unnamed_fields), iteration_count) for iteration_count in iteration_counts])
-# exit(1)
 
+print("Processing data... ", end='')
 iteration_data = [numpy.zeros((iteration_size, len(args.unnamed_fields)), dtype=numpy.int) for iteration_size in iteration_sizes]
 running_iteration_indices = numpy.zeros(maximum_iterations)
 for row_index, row in enumerate(raw_data):
@@ -78,11 +80,13 @@ for row_index, row in enumerate(raw_data):
                 int(value) for value in row[base_index:base_index + len(args.unnamed_fields)]
             ]
             running_iteration_indices[iteration_index] += 1
+print("OK.")
 
+print("Create histograms for iterations... ", end='')
 for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
     plot.title(unnamed_field)
     bins = numpy.linspace(
-        min([numpy.max(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
+        min([numpy.min(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
         max([numpy.max(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
         100
     )
@@ -95,14 +99,16 @@ for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
 
     plot.savefig("plots/%s.png" % unnamed_field.replace(' ', '_').lower())
     plot.close()
+print("OK.")
 
+print("Create plots for plies... ", end='')
 ply_data = [ply_data[numpy.where(ply_data[:, 0] == ply_index + 1)] for ply_index in range(maximum_game_length)]
 ply_indices = numpy.concatenate([ply_data[ply_index][:, 0] for ply_index in range(maximum_game_length)])
 for field_name_index, field_name in enumerate(field_names):
     if field_name_index == 0: # ply index itself
         continue
     plot.title(field_name)
-    plot.xlim([0, maximum_game_length + 1]) # one before and after
+    plot.xlim([0, maximum_game_length + 1])  # one before and after
     plot.scatter(
         ply_indices,
         numpy.concatenate([ply_data[ply_index][:, field_name_index] for ply_index in range(maximum_game_length)]),
@@ -111,9 +117,9 @@ for field_name_index, field_name in enumerate(field_names):
         edgecolors=''
     )
     plot.plot(range(1, maximum_game_length + 1), [numpy.mean(ply_data[ply_index][:, field_name_index], axis=0) for ply_index in range(maximum_game_length)])
-    # plot.show()
     plot.savefig("plots/%s.png" % field_name.replace(' ', '_').lower())
     plot.close()
+print("OK.")
 
 
 
