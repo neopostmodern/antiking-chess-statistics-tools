@@ -102,27 +102,6 @@ if args.interactive:
 plot.close()
 print("OK.")
 
-# print("Create histograms for iterations... ", end='')
-# for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
-#     plot.title(unnamed_field)
-#     bins = numpy.linspace(
-#         min([numpy.min(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
-#         max([numpy.max(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
-#         100
-#     )
-#     for iteration_index in range(maximum_iterations):
-#         # print(numpy.mean(iteration_data[iteration_index], axis=0))
-#         mean = numpy.mean(iteration_data[iteration_index], axis=0)[unnamed_field_index]
-#
-#         plot.hist(iteration_data[iteration_index][:, unnamed_field_index], bins, label=("Iteration %d" % iteration_index))
-#         plot.axvline(mean)
-#
-#     plot.savefig("plots/%s.png" % unnamed_field.replace(' ', '_').lower())
-#     if args.interactive:
-#         plot.show()
-#     plot.close()
-# print("OK.")
-
 print("Create plots for plies... ", end='')
 ply_data = [ply_data[numpy.where(ply_data[:, 0] == ply_index + 1)] for ply_index in range(maximum_game_length)]
 ply_indices = numpy.concatenate([ply_data[ply_index][:, 0] for ply_index in range(maximum_game_length)])
@@ -149,6 +128,48 @@ for field_name_index, field_name in enumerate(field_names):
     plot.plot(range(1, maximum_game_length + 1), mean + std, color='g', alpha=.5)
     plot.plot(range(1, maximum_game_length + 1), mean - std, color='g', alpha=.5)
     plot.savefig("%s/%s.png" % (OUTPUT_FOLDER, field_name.replace(' ', '_').lower()))
+    if args.interactive:
+        plot.show()
+    plot.close()
+print("OK.")
+
+
+print("Create combined graph for unnamed fields per iterations... ", end='')
+plot.title("Per iteration")
+means = []
+colors = ['b', 'g', 'r']
+for iteration_index, iteration in enumerate(iteration_data):
+    means.append(numpy.mean(iteration_data[iteration_index], axis=0))
+
+    for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
+        plot.scatter([iteration_index] * iteration.shape[0], iteration[:, unnamed_field_index], c=colors[unnamed_field_index], edgecolors='', alpha=.1)
+
+for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
+    plot.plot([mean[unnamed_field_index] for mean in means], label=unnamed_field, c=colors[unnamed_field_index])
+
+plot.legend()
+plot.savefig("plots/per-iteration.png")
+if args.interactive:
+    plot.show()
+plot.close()
+print("OK.")
+
+print("Create histograms for iterations... ", end='')
+for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
+    plot.title(unnamed_field)
+    bins = numpy.linspace(
+        min([numpy.min(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
+        max([numpy.max(iteration_data[iteration_index][:, unnamed_field_index]) for iteration_index in range(maximum_iterations)]),
+        100
+    )
+    for iteration_index in range(maximum_iterations):
+        # print(numpy.mean(iteration_data[iteration_index], axis=0))
+        mean = numpy.mean(iteration_data[iteration_index], axis=0)[unnamed_field_index]
+
+        plot.hist(iteration_data[iteration_index][:, unnamed_field_index], bins, label=("Iteration %d" % iteration_index))
+        plot.axvline(mean)
+
+    plot.savefig("plots/%s.png" % unnamed_field.replace(' ', '_').lower())
     if args.interactive:
         plot.show()
     plot.close()
