@@ -90,6 +90,18 @@ for row_index, row in enumerate(raw_data):
             running_iteration_indices[iteration_index] += 1
 print("OK.")
 
+print("Create histograms for iterations... ", end='')
+mean = numpy.mean(game_lengths)
+
+plot.hist(game_lengths, bins=10, label="Game lengths")
+plot.axvline(mean)
+#
+plot.savefig("%s/game_lengths.png" % OUTPUT_FOLDER)
+if args.interactive:
+    plot.show()
+plot.close()
+print("OK.")
+
 # print("Create histograms for iterations... ", end='')
 # for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
 #     plot.title(unnamed_field)
@@ -136,9 +148,9 @@ for field_name_index, field_name in enumerate(field_names):
     plot.plot(range(1, maximum_game_length + 1), mean, color='b')
     plot.plot(range(1, maximum_game_length + 1), mean + std, color='g', alpha=.5)
     plot.plot(range(1, maximum_game_length + 1), mean - std, color='g', alpha=.5)
+    plot.savefig("%s/%s.png" % (OUTPUT_FOLDER, field_name.replace(' ', '_').lower()))
     if args.interactive:
         plot.show()
-    plot.savefig("%s/%s.png" % (OUTPUT_FOLDER, field_name.replace(' ', '_').lower()))
     plot.close()
 print("OK.")
 
