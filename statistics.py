@@ -14,7 +14,7 @@ def to_number(string):
         return None
 
 field_names = []
-OUTPUT_FOLDER = 'plots'
+OUTPUT_BASE_FOLDER = 'plots'
 
 parser = argparse.ArgumentParser(description='Analyze (and visualize) logs')
 parser.add_argument('directory', metavar='logs_directory', type=str, help='The folder containing the PlyMouth CSV logs')
@@ -29,9 +29,16 @@ if not os.path.isdir(args.directory):
     print("Not a directory (or does not exist: %s" % args.directory)
     exit(1)
 
-if os.path.isdir(OUTPUT_FOLDER):
-    shutil.rmtree(OUTPUT_FOLDER)
-os.mkdir(OUTPUT_FOLDER)
+if not os.path.isdir(OUTPUT_BASE_FOLDER):
+    os.mkdir(OUTPUT_BASE_FOLDER)
+
+output_folder = OUTPUT_BASE_FOLDER
+if '/' in args.directory:
+    output_folder = os.path.join(OUTPUT_BASE_FOLDER, args.directory.split('/')[-1])
+
+if os.path.isdir(output_folder):
+    shutil.rmtree(output_folder)
+os.mkdir(output_folder)
 
 raw_data = []
 game_lengths = []
@@ -103,7 +110,7 @@ mean = numpy.mean(game_lengths)
 plot.hist(game_lengths, bins=10, label="Game lengths")
 plot.axvline(mean)
 #
-plot.savefig("%s/game_lengths.png" % OUTPUT_FOLDER)
+plot.savefig("%s/game_lengths.png" % output_folder)
 if args.interactive:
     plot.show()
 plot.close()
@@ -134,7 +141,7 @@ for field_name_index, field_name in enumerate(field_names):
     plot.plot(range(1, maximum_game_length + 1), mean, color='b')
     plot.plot(range(1, maximum_game_length + 1), mean + std, color='g', alpha=.5)
     plot.plot(range(1, maximum_game_length + 1), mean - std, color='g', alpha=.5)
-    plot.savefig("%s/%s.png" % (OUTPUT_FOLDER, field_name.replace(' ', '_').lower()))
+    plot.savefig("%s/%s.png" % (output_folder, field_name.replace(' ', '_').lower()))
     if args.interactive:
         plot.show()
     plot.close()
@@ -162,7 +169,7 @@ for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
     plot.plot([mean[unnamed_field_index] for mean in means], label=unnamed_field, c=colors[unnamed_field_index])
 
 plot.legend()
-plot.savefig("plots/per-iteration.png")
+plot.savefig("%s/per-iteration.png" % output_folder)
 if args.interactive:
     plot.show()
 plot.close()
@@ -183,7 +190,7 @@ for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
         plot.hist(iteration_data[iteration_index][:, unnamed_field_index], bins, label=("Iteration %d" % iteration_index))
         plot.axvline(mean)
 
-    plot.savefig("plots/%s.png" % unnamed_field.replace(' ', '_').lower())
+    plot.savefig("%s/%s.png" % (output_folder, unnamed_field.replace(' ', '_').lower()))
     if args.interactive:
         plot.show()
     plot.close()
