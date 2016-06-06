@@ -6,6 +6,13 @@ import numpy
 import matplotlib.pyplot as plot
 import shutil
 
+
+def to_number(string):
+    try:
+        return float(string)
+    except ValueError:
+        return None
+
 field_names = []
 OUTPUT_FOLDER = 'plots'
 
@@ -69,14 +76,14 @@ if args.verbose:
     print("> Maximum iterations: %d" % maximum_iterations)
     print("> Iteration counts:", list(iteration_counts), iteration_sizes)
 
-ply_data = numpy.ndarray((len(raw_data), len(field_names) + 1), dtype=numpy.int)
+ply_data = numpy.ndarray((len(raw_data), len(field_names) + 1), dtype=numpy.float)
 
 print("Processing data... ", end='')
-iteration_data = [numpy.zeros((iteration_size, len(args.unnamed_fields)), dtype=numpy.int) for iteration_size in iteration_sizes]
+iteration_data = [numpy.zeros((iteration_size, len(args.unnamed_fields)), dtype=numpy.float) for iteration_size in iteration_sizes]
 running_iteration_indices = numpy.zeros(maximum_iterations)
 for row_index, row in enumerate(raw_data):
     # copy all ply-level fields
-    ply_data[row_index, :len(field_names)] = row[:len(field_names)]
+    ply_data[row_index, :len(field_names)] = [to_number(value) for value in row[:len(field_names)]]
     # very good approximate of total used time is in the last field, add to ply-level data
     ply_data[row_index, len(field_names)] = row[len(row) - 1]
 
@@ -85,7 +92,7 @@ for row_index, row in enumerate(raw_data):
         base_index = len(field_names) + iteration_index * len(args.unnamed_fields)
         if len(row) > base_index:
             iteration_data[iteration_index][running_iteration_indices[iteration_index]] = [
-                int(value) for value in row[base_index:base_index + len(args.unnamed_fields)]
+                to_number(value) for value in row[base_index:base_index + len(args.unnamed_fields)]
             ]
             running_iteration_indices[iteration_index] += 1
 print("OK.")
@@ -134,15 +141,22 @@ for field_name_index, field_name in enumerate(field_names):
 print("OK.")
 
 
-print("Create combined graph for unnamed fields per iterations... ", end='')
+print("Create combined graphs for unnamed fields per iterations... ", end='')
 plot.title("Per iteration")
-means = []
+plot.ylim([0, 2000])
+means = numpy.zeros([maximum_iterations, len(args.unnamed_fields)])
 colors = ['b', 'g', 'r']
 for iteration_index, iteration in enumerate(iteration_data):
-    means.append(numpy.mean(iteration_data[iteration_index], axis=0))
+    means[iteration_index] = numpy.ma.masked_invalid(iteration_data[iteration_index]).mean(0)
 
     for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
-        plot.scatter([iteration_index] * iteration.shape[0], iteration[:, unnamed_field_index], c=colors[unnamed_field_index], edgecolors='', alpha=.1)
+        plot.scatter(
+            [iteration_index] * iteration.shape[0],  # a list of the same X value
+            iteration[:, unnamed_field_index],  # actual data
+            c=colors[unnamed_field_index],  # stable colors
+            edgecolors='',
+            alpha=.1
+        )
 
 for unnamed_field_index, unnamed_field in enumerate(args.unnamed_fields):
     plot.plot([mean[unnamed_field_index] for mean in means], label=unnamed_field, c=colors[unnamed_field_index])
